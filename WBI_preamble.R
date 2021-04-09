@@ -11,7 +11,7 @@ defineModule(sim, list(
                       "2. species equivalencies tables and the sppEquiv column",
                       "3. vegetation map, biomassMap, standAge Map, firePoints, flammable map",
                       "rawBiomassMap,vegMap, and ecoregion map."),
-  keywords = "",
+  keywords = "WBI",
   authors = c(
     person("Alex M", "Chubaty", email= "achubaty@for-cast.ca", role = "aut"),
     person("Ana", "Raymundo", email= "angeles-ana-paula.raymundo-sanchez.1@ulaval.ca", role = "aut")
@@ -44,37 +44,36 @@ defineModule(sim, list(
     defineParameter("bufferDist", "numeric", 20000, NA, NA,
                     paste("Distance (m) to buffer studyArea and rasterToMatch when",
                           "creating large versions.")),
-        defineParameter("studyAreaName", "character", "BC", NA, NA,
-                    paste("study area name for WB project, options are: BC, AB",
-                          "SK,YK, NWT,MB"))
+    defineParameter("studyAreaName", "character", "bcr6BC", NA, NA,
+                    paste("study area name for WB project, options are: bcr6BC, bcr6AB",
+                          "bcr6SK,YK, bcr6NWT,MB"))
   ),
   inputObjects = bindrows(
-    #expectsInput("objectName", "objectClass", "input object description", sourceURL, ...),
-    expectsInput(objectName = NA, objectClass = NA, desc = NA, sourceURL = NA)
+
   ),
   outputObjects = bindrows(
-    createsOutput(firePoints, objectClass = "RasterLayer",
+    createsOutput("firePoints", objectClass = "SimpleFeatureCollection",
                   desc = "fire points for XXXXX"),
 #TODO: DESCRIPTION
-    createsOutput(rasterToMatch, objectClass = "RasterLayer",
+    createsOutput("rasterToMatch", objectClass = "RasterLayer",
                   desc = "template raster"),
-    createsOutput(rasterToMatchLarge, objectClass = "RasterLayer",
+    createsOutput("rasterToMatchLarge", objectClass = "RasterLayer",
                   desc = "template raster for larger area"),
-    createsOutput(rasterToMatchReporting, objectClass = "RasterLayer",
+    createsOutput("rasterToMatchReporting", objectClass = "RasterLayer",
                   desc = "template raster for reporting area"),
-    createsOutput(sppColorVect, objectClass = "character",
+    createsOutput("sppColorVect", objectClass = "character",
                   desc = "species colours for plotting"),
-    createsOutput(sppEquiv, objectClass = "character",
+    createsOutput("sppEquiv", objectClass = "character",
                   desc = "table of LandR species names equivalencies"),
-    createsOutput(sppEquivCol, objectClass = "character",
+    createsOutput("sppEquivCol", objectClass = "character",
                   desc = "name of column to use in sppEquiv"),
-    createsOutput(standAgeMap2011, objectClass = "RasterLayer",
+    createsOutput("standAgeMap2011", objectClass = "RasterLayer",
                   desc = "time since disturbance raster for year 2011"),
-    createsOutput(studyArea, objectClass = "SpatialPolygonsDataFrame",
+    createsOutput("studyArea", objectClass = "SpatialPolygonsDataFrame",
                   desc = "study area used for simulation (buffered to mitigage edge effects"),
-    createsOutput(studyAreaLarge, objectClass = "SpatialPolygonsDataFrame",
+    createsOutput("studyAreaLarge", objectClass = "SpatialPolygonsDataFrame",
                   desc = "study area used for module parametrization(buffered)"),
-    createsOutput(studyAreaReporting, objectClass = "SpatialPolygonsDataFrame",
+    createsOutput("studyAreaReporting", objectClass = "SpatialPolygonsDataFrame",
                   desc = "study area used for reporting")
   )
 ))
@@ -108,7 +107,6 @@ doEvent.WBI_preamble = function(sim, eventTime, eventType) {
 Init <- function(sim) {
   dPath <- file.path("modules", currentModule(sim), "data")
   cacheTags <- c(P(sim)$studyAreaName, currentModule(sim))
-  browser()
 
   #### Prep study-area specific objects ####
   ## when adding study areas, add relevant climate urls, rtm and sa, and don't forget R script prepSppEquiv
@@ -169,9 +167,9 @@ Init <- function(sim) {
   BC <- c("British Columbia")
   SK <- c("Saskatchewan")
   MB <- c("Manitoba")
-  NWT <- C("Northwest Territories")
+  NWT <- c("Northwest Territories")
 
-  bcr6 <- bcrshp[bcr_sf$BCR %in% c(6), ]
+  bcr6 <- bcrshp[bcrshp$BCR %in% c(6), ]
 
   provsBCR6 <- canProvs[canProvs$NAME_1 %in% provBCR6, ]
   AB <- canProvs[canProvs$NAME_1 %in% AB, ]
@@ -195,7 +193,7 @@ Init <- function(sim) {
   ## In addition, this object has problems when rasterize, that is why geometry is being
   ## homogenize by using st_cast
   #bcr6SA <- st_cast(bcr6SA, "MULTIPOLYGON") %>% as_Spatial(bcr6SA) ## TODO:
-if (grepl("bcr6_AB", P(sim)$studyAreaName)){
+if (grepl("bcr6AB", P(sim)$studyAreaName)){
     ## BCR6 Alberta
   bcr6AB <- reproducible::Cache(postProcess,
                                   AB,
@@ -226,7 +224,7 @@ if (grepl("bcr6_AB", P(sim)$studyAreaName)){
 }else if (grepl("bcr6SK", P(sim)$studyAreaName)){
   bcr6SK <- reproducible::Cache(postProcess,
                                 SK,
-                                studyArea = studyArea,
+                                studyArea = bcr6SA,
                                 filename2 = NULL,
                                 cacheRepo = Paths$cachePath)
 
@@ -241,14 +239,15 @@ if (grepl("bcr6_AB", P(sim)$studyAreaName)){
 
   sim$studyArea <- bcr6MB
 }
+  sim$studyArea <- as_Spatial(sim$studyArea)
   sim$studyArea <- spTransform(sim$studyArea, targetCRS)
   sim$studyArea$studyAreaName <- P(sim)$studyAreaName
   sim$studyAreaReporting <- sim$studyArea
 
   #studyArea and studyAreaLarge are the same buffered area
   sim$studyArea <- buffer(sim$studyArea, P(sim)$bufferDist)
-  sim$studyAreaReporting <- sim$studyArea
-
+  sim$studyAreaLarge <- sim$studyArea
+browser()
   #################################################################################
   ## LCC 2005
   #################################################################################
@@ -277,30 +276,37 @@ if (grepl("bcr6_AB", P(sim)$studyAreaName)){
                            destinationPath = asPath(Paths$inputPath),
                            ageUrl = standAgeMapURL,
                            ageFun = "raster::raster",
-                           studyArea = studyAreaLarge,
-                           rasterToMatch = rasterToMatchLarge,
+                           studyArea = sim$studyArea,
+                           rasterToMatch = sim$rasterToMatch,
                            # maskWithRTM = TRUE,
                            method = "bilinear",
                            useCache = TRUE,
                            datatype = "INT2U",
                            filename2 = paste0("standAgeMap_", P(sim)$studyAreaName, ".tif"),
                            startTime = 2011)
+  browser()
 
+  sim$rstLCC <- reproducible::Cache(LandR::prepInputsLCC,
+                                    destinationPath = asPath(Paths$inputPath),
+                                    studyArea = sim$studyArea,
+                                    rasterToMatch = sim$rasterToMatch,
+                                    year = 2005,
+                                    filename2 = paste0(P(sim)$studyAreaName, "_rstLCC.tif"))
 
-  sim$flammableMap <- LandR::defineFlammable(LandCoverClassifiedMap = rstLCC,
+  sim$flammableMap <- LandR::defineFlammable(LandCoverClassifiedMap = sim$rstLCC,
                                          nonFlammClasses = c(33, 36:39),
-                                         mask = rasterToMatch)
+                                         mask = sim$rasterToMatch)
 
-  firePointsURL <- "http://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_pnt/current_version/NFDB_point.zip"
-  sim$firePoints <- Cache(fireSenseUtils::getFirePoints_NFDB,
-                      url = firePointsURL,
-                      studyArea = studyArea,
-                      rasterToMatch = rasterToMatch,
-                      redownloadIn = 1,
-                      years = 1991:2017, ## TODO: @araymund83 these are default years; do you want others?
-                      fireSizeColName = "SIZE_HA",
-                      NFDB_pointPath = asPath(Paths$inputPath)) %>%
-    st_as_sf(.)
+  # firePointsURL <- "http://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_pnt/current_version/NFDB_point.zip"
+  # sim$firePoints <- Cache(fireSenseUtils::getFirePoints_NFDB,
+  #                     url = firePointsURL,
+  #                     studyArea = sim$studyArea,
+  #                     rasterToMatch = sim$rasterToMatch,
+  #                     redownloadIn = 1,
+  #                     years = 1991:2017, ## TODO: @araymund83 these are default years; do you want others?
+  #                     fireSizeColName = "SIZE_HA",
+  #                     NFDB_pointPath = asPath(Paths$inputPath)) %>%
+  #   st_as_sf(.)
 
   biomassMapURL <- paste0(
     "https://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
@@ -313,8 +319,8 @@ if (grepl("bcr6_AB", P(sim)$studyAreaName)){
                                destinationPath = asPath(Paths$inputPath),
                                url = biomassMapURL,
                                fun = "raster::raster",
-                               studyArea = studyAreaLarge,
-                               rasterToMatch = rasterToMatchLarge,
+                               studyArea = sim$studyArea,
+                               rasterToMatch = sim$rasterToMatch,
                                maskWithRTM = TRUE,
                                method = "bilinear",
                                datatype = "INT2U",
@@ -324,8 +330,8 @@ if (grepl("bcr6_AB", P(sim)$studyAreaName)){
   sim$vegMap <- Cache(LandR::prepInputsLCC,
                   year = 2005,
                   destinationPath = asPath(Paths$inputPath),
-                  studyArea = studyArea,
-                  rasterToMatch = rasterToMatch,
+                  studyArea = sim$studyArea,
+                  rasterToMatch = sim$rasterToMatch,
                   filename2 = paste0("vegMap_",P(sim)$studyAreaName,".tif")
   )
 
@@ -335,8 +341,8 @@ if (grepl("bcr6_AB", P(sim)$studyAreaName)){
                          destinationPath = Paths$inputPath,
                          url = ecoregionsURL,
                          fun = "read_sf",
-                         studyArea = studyArea,
-                         rasterToMatch = rasterToMatch,
+                         studyArea = sim$studyArea,
+                         rasterToMatch = sim$rasterToMatch,
                          maskWithRTM = TRUE,
                          method = "bilinear",
                          datatype = "INT2U",
