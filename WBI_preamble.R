@@ -106,12 +106,12 @@ doEvent.WBI_preamble = function(sim, eventTime, eventType) {
 ### template initialization
 Init <- function(sim) {
   dPath <- file.path("modules", currentModule(sim), "data")
-  cacheTags <- c(P(sim)$studyAreaName, currentModule(sim))
-
   #### Prep study-area specific objects ####
   ## when adding study areas, add relevant climate urls, rtm and sa, and don't forget R script prepSppEquiv
-  allowedStudyAreas <- c("bcr6AB", "bcr6BC", "bcr6MB", "bcr6NWT", "NU", "bcr6SK", "YT") ## prov/terr x BCR intersections
-  #allowedStudyAreas <- c("AB", "BC", "MB", "NT", "NU", "SK", "YT") ## prov/terr x BCR intersections
+  allowedStudyAreas <- c( "bcr4BC", "bcr4NWT", "bcr4YK","bcr6AB", "bcr6BC",
+                          "bcr6MB", "bcr6SK","bcr6NWT",
+                          "bcr7AB", "bcr7MB", "bcr7NWTNU", "bcr7SK", "bcr8MB") ## prov/terr x BCR intersections
+
 
   provs <- c("British Columbia", "Alberta", "Saskatchewan", "Manitoba")
   terrs <- c("Yukon", "Northwest Territories", "Nunavut")
@@ -156,89 +156,156 @@ Init <- function(sim) {
                        cacheRepo = paths1$cachePath,
                        filename2 = NULL) %>%
     as_Spatial(.)
+browser()
+
+
 
 
   #################################################################################
-  ## BCR6 subdivision
+  ## BCR subdivision
   #################################################################################
-  provBCR6 <- c("British Columbia", "Alberta", "Saskatchewan", "Manitoba",
-                "Northwest Territories")
   AB <- c("Alberta")
   BC <- c("British Columbia")
   SK <- c("Saskatchewan")
   MB <- c("Manitoba")
-  NWT <- c("Northwest Territories")
+  NW <- c("Northwest Territories")
+  NU <- c("Nunavut")
+  YK <- c("Yukon")
 
-  bcr6 <- bcrshp[bcrshp$BCR %in% c(6), ]
 
-  provsBCR6 <- canProvs[canProvs$NAME_1 %in% provBCR6, ]
+# provsBCR6 <- canProvs[canProvs$NAME_1 %in% provBCR6, ]
   AB <- canProvs[canProvs$NAME_1 %in% AB, ]
   BC <- canProvs[canProvs$NAME_1 %in% BC, ]
   SK <- canProvs[canProvs$NAME_1 %in% SK,]
   MB <- canProvs[canProvs$NAME_1 %in% MB,]
-  NWT <- canProvs[canProvs$NAME_1 %in% NWT, ]
+  NW <- canProvs[canProvs$NAME_1 %in% NW, ]
+  NU <- canProvs[canProvs$NAME_1 %in% NU, ]
+  YK <- canProvs[canProvs$NAME_1 %in% YK, ]
+  NWNU <- canProvs[canProvs$NAME_1 %in% c(NU, NW)]
 
-  bcr6SA <- reproducible::Cache(postProcess,
-                                provsBCR6,
-                                studyArea = bcr6,
-                                useSAcrs = TRUE,
-                                cacheRepo = asPath(Paths$cachePath),
-                                destinationPath = asPath(Paths$inputPath),
-                                filename2 = "bcr6_studyArea")
+  #extract bcr polygons per provincial boundary
+  if (grepl("bcrMB", P(sim)$studyAreaName)){
+
+    bcrMB <- st_intersection(bcrWB, MB)
+    sim$studyArea <- bcrMB
+  } else {
+  bcrNW <- st_intersection(bcrWB, NW)
+  bcrSK <- st_intersection(bcrWB, SK)
+  bcrAB <- st_intersection(bcrWB, AB)
+  bcrBC <- st_intersection(bcrWB, BC)
+  bcrNU <- st_intersection(bcrWB, NU)
+  bcrYK <- st_intersection(bcrWB, YK)
+}
+  # bcr6SA <- reproducible::Cache(postProcess,
+  #                               provsBCR6,
+  #                               studyArea = bcr6,
+  #                               useSAcrs = TRUE,
+  #                               cacheRepo = asPath(Paths$cachePath),
+  #                               destinationPath = asPath(Paths$inputPath),
+  #                               filename2 = "bcr6_studyArea")
 
   ## in order to be able to rasterize, we need to create a numeric column to ID each of the provinces
   ## for BCR6
-  bcr6SA$ID <- as.numeric(as.factor(bcr6SA$NAME_1))
+  # bcr6SA$ID <- as.numeric(as.factor(bcr6SA$NAME_1))
+
 
   ## In addition, this object has problems when rasterize, that is why geometry is being
   ## homogenize by using st_cast
-  #bcr6SA <- st_cast(bcr6SA, "MULTIPOLYGON") %>% as_Spatial(bcr6SA) ## TODO:
-if (grepl("bcr6AB", P(sim)$studyAreaName)){
-    ## BCR6 Alberta
-  bcr6AB <- reproducible::Cache(postProcess,
-                                  AB,
-                                  studyArea = bcr6SA,
-                                  useSAcrs =  TRUE,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr6AB
-} else if (grepl("bcr6BC", P(sim)$studyAreaName)){
-  ## BCR6 British Columbia
-  bcr6BC <- reproducible::Cache(postProcess,
-                                  BC,
-                                  studyArea = bcr6SA,
-                                  useSAcrs =  TRUE,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr6BC
-} else if (grepl("bcr6NWT", P(sim)$studyAreaName)){
-  ## BCR6 North West Territories
-  bcr6NWT <- reproducible::Cache(postProcess,
-                                 NWT,
-                                 studyArea = bcr6SA,
-                                 useSAcrs = TRUE,
-                                 filename2 = NULL,
-                                 cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr6NWT
-
-}else if (grepl("bcr6SK", P(sim)$studyAreaName)){
-  bcr6SK <- reproducible::Cache(postProcess,
-                                SK,
-                                studyArea = bcr6SA,
-                                filename2 = NULL,
-                                cacheRepo = Paths$cachePath)
-
-  sim$studyArea <- bcr6SK
-
-}else if (grepl("bcr6MB", P(sim)$studyAreaName)){
-  bcr6MB <- reproducible::Cache(postProcess,
-                                MB,
-                                studyArea = studyArea,
-                                filename2 = NULL,
-                                cacheRepo = Paths$cachePath)
-
-  sim$studyArea <- bcr6MB
-}
+#   #bcr6SA <- st_cast(bcr6SA, "MULTIPOLYGON") %>% as_Spatial(bcr6SA) ## TODO:
+# if (grepl("bcr6AB", P(sim)$studyAreaName)){
+#     ## BCR6 Alberta
+#   bcr6AB <- reproducible::Cache(postProcess,
+#                                 AB,
+#                                 studyArea = bcr6SA,
+#                                 useSAcrs =  TRUE,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr6AB
+# } else if (grepl("bcr6BC", P(sim)$studyAreaName)){
+#   ## BCR6 British Columbia
+#   bcr6BC <- reproducible::Cache(postProcess,
+#                                 BC,
+#                                 studyArea = bcr6SA,
+#                                 useSAcrs =  TRUE,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr6BC
+# } else if (grepl("bcr6NWT", P(sim)$studyAreaName)){
+#   ## BCR6 North West Territories
+#   bcr6NWT <- reproducible::Cache(postProcess,
+#                                  NWT,
+#                                  studyArea = bcr6SA,
+#                                  useSAcrs = TRUE,
+#                                  filename2 = NULL,
+#                                  cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr6NWT
+#
+# }else if (grepl("bcr6SK", P(sim)$studyAreaName)){
+#   bcr6SK <- reproducible::Cache(postProcess,
+#                                 SK,
+#                                 studyArea = bcr6SA,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr6SK
+#
+# }else if (grepl("bcr6MB", P(sim)$studyAreaName)){
+#   bcr6MB <- reproducible::Cache(postProcess,
+#                                 MB,
+#                                 studyArea = bcr6,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr6MB
+# } else if (grepl("bcr4BC", P(sim)$studyAreaName)){
+#   bcr4BC <- reproducible::Cache(postProcess,
+#                                 BC,
+#                                 studyArea = bcr4,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr4BC
+# } else if (grepl("bcr4NWT", P(sim)$studyAreaName)){
+#   bcr4NWT <- reproducible::Cache(postProcess,
+#                                 NWT,
+#                                 studyArea = bcr4,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr4NWT
+# } else if (grepl("bcr4YK", P(sim)$studyAreaName)){
+#   bcr4YK <- reproducible::Cache(postProcess,
+#                                 YK,
+#                                 studyArea = bcr4,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr4YK
+# } else if (grepl("bcr7AB", P(sim)$studyAreaName)){
+#   bcr7AB <- reproducible::Cache(postProcess,
+#                                 AB,
+#                                 studyArea = bcr7,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr7AB
+# } else if (grepl("bcr7MB", P(sim)$studyAreaName)){
+#   bcr7MB <- reproducible::Cache(postProcess,
+#                                 MB,
+#                                 studyArea = bcr7,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr7MB
+# } else if (grepl("bcr7NWTNU", P(sim)$studyAreaName)){
+#   bcr7NWTNU <- reproducible::Cache(postProcess,
+#                                 NWT,
+#                                 studyArea = bcr7,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#
+#   sim$studyArea <- bcr7NWTNU
+# }
   sim$studyArea <- as_Spatial(sim$studyArea)
   sim$studyArea <- spTransform(sim$studyArea, targetCRS)
   sim$studyArea$studyAreaName <- P(sim)$studyAreaName
@@ -247,15 +314,23 @@ if (grepl("bcr6AB", P(sim)$studyAreaName)){
   #studyArea and studyAreaLarge are the same buffered area
   sim$studyArea <- buffer(sim$studyArea, P(sim)$bufferDist)
   sim$studyAreaLarge <- sim$studyArea
-browser()
+
   #################################################################################
-  ## LCC 2005
+  ## LCC 2010
   #################################################################################
-  sim$rasterToMatch <- reproducible::Cache(LandR::prepInputsLCC,
-                                           destinationPath = asPath(Paths$inputPath),
-                                           studyArea = sim$studyArea,
-                                           year = 2005,
-                                           filename2 = paste0(P(sim)$studyAreaName, "_rtm.tif"))
+##create a RTM for lcc2010 have a 250 m resolution
+  RTM <- Cache(LandR::prepInputsLCC,
+               destinationPath = asPath(Paths$inputPath),
+               studyArea = sim$studyArea,
+               year = 2005,
+               filename2 = paste0(P(sim)$studyAreaName, "_250_RTM.tif"))
+
+
+   sim$rasterToMatch <- Cache(LandR::prepInputsLCC,
+                              destinationPath = asPath(Paths$inputPath),
+                              rasterToMatch = RTM,
+                              year = 2010,
+                              filename2 = paste0(P(sim)$studyAreaName, "_rtm.tif"))
 
   sim$rasterToMatchReporting <- Cache(maskInputs, sim$rasterToMatch, sim$studyAreaReporting)
   sim$rasterToMatchLarge <- sim$rasterToMatch
@@ -272,7 +347,7 @@ browser()
   )
 
 
-  sim$standAgeMap2011 <- Cache(LandR::prepInputsStandAgeMap,
+  sim$standAgeMap2011 <-  LandR::prepInputsStandAgeMap(
                            destinationPath = asPath(Paths$inputPath),
                            ageUrl = standAgeMapURL,
                            ageFun = "raster::raster",
@@ -284,17 +359,19 @@ browser()
                            datatype = "INT2U",
                            filename2 = paste0("standAgeMap_", P(sim)$studyAreaName, ".tif"),
                            startTime = 2011)
-  browser()
 
-  sim$rstLCC <- reproducible::Cache(LandR::prepInputsLCC,
-                                    destinationPath = asPath(Paths$inputPath),
-                                    studyArea = sim$studyArea,
-                                    rasterToMatch = sim$rasterToMatch,
-                                    year = 2005,
-                                    filename2 = paste0(P(sim)$studyAreaName, "_rstLCC.tif"))
+  sim$rstLCC <- sim$rasterToMatch
 
-  sim$flammableMap <- LandR::defineFlammable(LandCoverClassifiedMap = sim$rstLCC,
-                                         nonFlammClasses = c(33, 36:39),
+  # sim$rstLCC <- reproducible::Cache(LandR::prepInputsLCC,
+  #                                   destinationPath = asPath(Paths$inputPath),
+  #                                   studyArea = sim$studyArea,
+  #                                   rasterToMatch = sim$rasterToMatch,
+  #                                   year = 2010,
+  #                                   filename2 = paste0(P(sim)$studyAreaName, "_rstLCC.tif"))
+
+  sim$flammableMap <- LandR::defineFlammable(LandCoverClassifiedMap = RTM,
+                                         nonFlammClasses = c(33, 36:39), # for LCC 2005
+                                         #nonFlammClasses = c(13, 16, 17, 18, 19),
                                          mask = sim$rasterToMatch)
 
   # firePointsURL <- "http://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_pnt/current_version/NFDB_point.zip"
@@ -348,7 +425,7 @@ browser()
                          datatype = "INT2U",
                          filename2 = paste0("ecoregionsMap_",P(sim)$studyAreaName,".tif")
   )
-
+browser()
 ##all species considered in WB (will be subset later for each study area)
   data("sppEquivalencies_CA", package = "LandR")
   sppEquiv <- sppEquivalencies_CA
@@ -359,13 +436,13 @@ browser()
   sppEquiv <- sppEquivalencies_CA[KNN %in% allWBspp]
   SASppToUse <- data.table::data.table(
     LandR = sppEquiv[, LandR],
-    bcr6BC = c(FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE),
-    bcr6AB = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE),
-    bcr6SK = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE),
-    bcr6MB = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE),
-    YT = c(FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE),
-    bcr6NWT = c(FALSE, FALSE, TRUE, TRUE, FALSE,TRUE, TRUE, TRUE, FALSE, TRUE),
-    NU = c(FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE)
+    bcrBC = c(FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE),
+    bcrAB = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE),
+    bcrSK = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE),
+    bcrMB = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE),
+    bcrYT = c(FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE),
+    bcrNWT = c(FALSE, FALSE, TRUE, TRUE, FALSE,TRUE, TRUE, TRUE, FALSE, TRUE),
+    bcrNU = c(FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE)
   )
   sAN <- studyAreaName
 
@@ -374,8 +451,8 @@ browser()
   rm(sppEquivalencies_CA)
 
   #Assign colour
-  sim$sppColorVect <- LandR::sppColors(sppEquiv = sppEquiv,
-                                   sppEquivCol = sppEquivCol,
+  sim$sppColorVect <- LandR::sppColors(sppEquiv = sim$sppEquiv,
+                                   sppEquivCol = sim$sppEquivCol,
                                    palette = "Paired")
   mixed <- structure("#D0FB84", names = "Mixed")
   sim$sppColorVect[length(sim$sppColorVect) + 1] <- mixed
