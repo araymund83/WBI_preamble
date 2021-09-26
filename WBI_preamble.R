@@ -172,7 +172,6 @@ Init <- function(sim) {
                        cacheRepo = paths1$cachePath,
                        filename2 = NULL) %>%
     as_Spatial(.)
-browser()
 
   #################################################################################
   ## BCR subdivision
@@ -199,46 +198,66 @@ browser()
   NU <- canProvs[canProvs$NAME_1 %in% NU, ]
   YK <- canProvs[canProvs$NAME_1 %in% YK, ]
 
-  bcr4SA <- reproducible::Cache(postProcess,
-                                bcr4,
-                                studyArea = WBstudyArea,
-                                useSAcrs = TRUE,
-                                cacheRepo = asPath(Paths$cachePath),
-                                destinationPath = asPath(Paths$inputPath),
-                                filename2 = NULL)
-  bcr6SA <- reproducible::Cache(postProcess,
-                                bcr6,
-                                studyArea = WBstudyArea,
-                                useSAcrs = TRUE,
-                                cacheRepo = asPath(Paths$cachePath),
-                                destinationPath = asPath(Paths$inputPath),
-                                filename2 = NULL)
-  bcr7SA <- reproducible::Cache(postProcess,
-                                bcr7,
-                                studyArea = WBstudyArea,
-                                useSAcrs = TRUE,
-                                cacheRepo = asPath(Paths$cachePath),
-                                destinationPath = asPath(Paths$inputPath),
-                                filename2 = NULL)
-  bcr8SA <- reproducible::Cache(postProcess,
-                                bcr8,
-                                studyArea = WBstudyArea,
-                                useSAcrs = TRUE,
-                                cacheRepo = asPath(Paths$cachePath),
-                                destinationPath = asPath(Paths$inputPath),
-                                filename2 = NULL)
+  # bcr4SA <- reproducible::Cache(postProcess,
+  #                               bcr4,
+  #                               studyArea = WBstudyArea,
+  #                               useSAcrs = TRUE,
+  #                               cacheRepo = asPath(Paths$cachePath),
+  #                               destinationPath = asPath(Paths$inputPath),
+  #                               filename2 = NULL)
+  # bcr6SA <- reproducible::Cache(postProcess,
+  #                               bcr6,
+  #                               studyArea = WBstudyArea,
+  #                               useSAcrs = TRUE,
+  #                               cacheRepo = asPath(Paths$cachePath),
+  #                               destinationPath = asPath(Paths$inputPath),
+  #                               filename2 = NULL)
+  # bcr7SA <- reproducible::Cache(postProcess,
+  #                               bcr7,
+  #                               studyArea = WBstudyArea,
+  #                               useSAcrs = TRUE,
+  #                               cacheRepo = asPath(Paths$cachePath),
+  #                               destinationPath = asPath(Paths$inputPath),
+  #                               filename2 = NULL)
+  # bcr8SA <- reproducible::Cache(postProcess,
+  #                               bcr8,
+  #                               studyArea = WBstudyArea,
+  #                               useSAcrs = TRUE,
+  #                               cacheRepo = asPath(Paths$cachePath),
+  #                               destinationPath = asPath(Paths$inputPath),
+  #                               filename2 = NULL)
    #bcr6SA <- as_Spatial(bcr6SA)
-
-    bcrMB <- st_intersection(bcrWB, MB)
-    sim$studyArea <- bcrMB
-  } else {
-  bcrNW <- st_intersection(bcrWB, NW)
-  bcrSK <- st_intersection(bcrWB, SK)
+  browser()
+if (grepl("AB", P(sim)$studyAreaName)){
   bcrAB <- st_intersection(bcrWB, AB)
-  bcrBC <- st_intersection(bcrWB, BC)
-  bcrNU <- st_intersection(bcrWB, NU)
-  bcrYK <- st_intersection(bcrWB, YK)
+  sim$studyArea <- bcrAB
 }
+if (grepl("BC", P(sim)$studyAreaName)){
+  bcrBC <- st_intersection(bcrWB, BC)
+  sim$studyArea <- bcrBC
+}
+if (grepl("MB", P(sim)$studyAreaName)){
+  bcrMB <- st_intersection(bcrWB, MB)
+  sim$studyArea <- bcrMB
+}
+if (grepl("SK", P(sim)$studyAreaName)){
+  bcrSK <- st_intersection(bcrWB, SK)
+  sim$studyArea <- bcrSK
+}
+
+if (grepl("NT", P(sim)$studyAreaName)){
+  bcrNT <- st_intersection(bcrWB, NT)
+  sim$studyArea <- bcrNT
+}
+if (grepl("NU", P(sim)$studyAreaName)){
+  bcrNU <- st_intersection(bcrWB, NU)
+  sim$studyArea <- bcrNU
+}
+if (grepl("YK", P(sim)$studyAreaName)){
+  bcrYK <- st_intersection(bcrWB, YK)
+  sim$studyArea <- bcrYK
+}
+
   # bcr6SA <- reproducible::Cache(postProcess,
   #                               provsBCR6,
   #                               studyArea = bcr6,
@@ -254,129 +273,130 @@ browser()
 
   ## In addition, this object has problems when rasterize, that is why geometry is being
   ## homogenize by using st_cast
-  #bcr6SA <- st_cast(bcr6SA, "MULTIPOLYGON") %>% as_Spatial(bcr6SA) ## TODO:
-if (grepl("AB", P(sim)$studyAreaName)){
-  if(grepl("bcr6", P(sim)$bcr)){
-    ## BCR6 Alberta
-  bcr6AB <- reproducible::Cache(postProcess,
-                                bcr6SA,
-                                studyArea = AB,
-                                useSAcrs =  TRUE,
-                                filename2 = NULL,
-                                cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr6AB
-  }
-} else if (grepl("BC", P(sim)$studyAreaName)){
-  if(grepl("bcr6", P(sim)$bcr)){
-  ## BCR6 British Columbia
-  bcr6BC <- reproducible::Cache(postProcess,
-                                  bcr6SA,
-                                  studyArea = BC,
-                                  useSAcrs =  TRUE,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr6BC
-  } else if(grepl("bcr4", P(sim)$bcr)){
-    bcr4BC <- reproducible::Cache(postProcess,
-                                  bcr4SA,
-                                  studyArea = BC,
-                                  useSAcrs =  TRUE,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-    sim$studyArea <- bcr4BC
-
-  }
-} else if (grepl("NT", P(sim)$studyAreaName)){
-  if(grepl("bcr4",P(sim)$bcr)){
-    bcr4NT <- reproducible::Cache(postProcess,
-                                  bcr4SA,
-                                  studyArea = NT,
-                                  useSAcrs = TRUE,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-    sim$studyArea <- bcr4NT
-
-  }else if (grepl("bcr6", P(sim)$bcr)){
-    ## BCR6 North West Territories
-    bcr6NT <- reproducible::Cache(postProcess,
-                                  bcr6SA,
-                                  studyArea = NT,
-                                  useSAcrs = TRUE,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-    sim$studyArea <- bcr6NT
-  }else if (grepl("bcr7", P(sim)$bcr)){
-    bcr7NT <- reproducible::Cache(postProcess,
-                                  bcr7SA,
-                                  studyArea = NT,
-                                  useSAcrs = TRUE,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-    sim$studyArea <- bcr7NT
-}
-} else if (grepl("SK", P(sim)$studyAreaName)){
-  if(grepl("bcr6", P(sim)$bcr)){
-  bcr6SK <- reproducible::Cache(postProcess,
-                                bcr6SA,
-                                studyArea = SK,
-                                filename2 = NULL,
-                                cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr6SK
-  } else if (grepl("bcr7", P(sim)$bcr)){
-    bcr7SK <- reproducible::Cache(postProcess,
-                                  bcr7SA,
-                                  studyArea = SK,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-    sim$studyArea <- bcr7SK
-  }else if (grepl("bcr8", P(sim)$bcr)){
-    bcr8SK <- reproducible::Cache(postProcess,
-                                  bcr8SA,
-                                  studyArea = SK,
-                                  filename2 = NULL,
-                                  cacheRepo = Paths$cachePath)
-    sim$studyArea <- bcr8SK
-  }
-} else if (grepl("MB", P(sim)$studyAreaName)){
-  if(grepl("bcr6", P(sim)$bcr)){
-  bcr6MB <- reproducible::Cache(postProcess,
-                                MB,
-                                studyArea = bcr6SA,
-                                filename2 = NULL,
-                                cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr6MB
-   } else if(grepl("bcr7", P(sim)$bcr)){
-     bcr8MB <- reproducible::Cache(postProcess,
-                                   MB,
-                                   studyArea = bcr7SA,
-                                   filename2 = NULL,
-                                   cacheRepo = Paths$cachePath)
-     sim$studyArea <- bcr7MB
-   } else if(grepl("bcr8", P(sim)$bcr)){
-     bcr8MB <- reproducible::Cache(postProcess,
-                                   MB,
-                                   studyArea = bcr8SA,
-                                   filename2 = NULL,
-                                   cacheRepo = Paths$cachePath)
-     sim$studyArea <- bcr8MB
-  }
-} else if(grepl("YK", P(sim)$studyArea)){
-    bcr4YK <- reproducible::Cache(postProcess,
-                                YK,
-                                studyArea = bcr4SA,
-                                filename2 = NULL,
-                                cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr4YK
-} else if(grepl("NU", P(sim)$studyArea)){
-  bcr7NU <- reproducible::Cache(postProcess,
-                                NU,
-                                studyArea = bcr7SA,
-                                filename2 = NULL,
-                                cacheRepo = Paths$cachePath)
-  sim$studyArea <- bcr7NU
-}
+#   #bcr6SA <- st_cast(bcr6SA, "MULTIPOLYGON") %>% as_Spatial(bcr6SA) ## TODO:
+# if (grepl("AB", P(sim)$studyAreaName)){
+#   if(grepl("bcr6", P(sim)$bcr)){
+#     ## BCR6 Alberta
+#   bcr6AB <- reproducible::Cache(postProcess,
+#                                 bcr6SA,
+#                                 studyArea = AB,
+#                                 useSAcrs =  TRUE,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr6AB
+#   }
+# } else if (grepl("BC", P(sim)$studyAreaName)){
+#   if(grepl("bcr6", P(sim)$bcr)){
+#   ## BCR6 British Columbia
+#   bcr6BC <- reproducible::Cache(postProcess,
+#                                   bcr6SA,
+#                                   studyArea = BC,
+#                                   useSAcrs =  TRUE,
+#                                   filename2 = NULL,
+#                                   cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr6BC
+#   } else if(grepl("bcr4", P(sim)$bcr)){
+#     bcr4BC <- reproducible::Cache(postProcess,
+#                                   bcr4SA,
+#                                   studyArea = BC,
+#                                   useSAcrs =  TRUE,
+#                                   filename2 = NULL,
+#                                   cacheRepo = Paths$cachePath)
+#     sim$studyArea <- bcr4BC
+#
+#   }
+# } else if (grepl("NT", P(sim)$studyAreaName)){
+#   if(grepl("bcr4",P(sim)$bcr)){
+#     bcr4NT <- reproducible::Cache(postProcess,
+#                                   bcr4SA,
+#                                   studyArea = NT,
+#                                   useSAcrs = TRUE,
+#                                   filename2 = NULL,
+#                                   cacheRepo = Paths$cachePath)
+#     sim$studyArea <- bcr4NT
+#
+#   }else if (grepl("bcr6", P(sim)$bcr)){
+#     ## BCR6 North West Territories
+#     bcr6NT <- reproducible::Cache(postProcess,
+#                                   bcr6SA,
+#                                   studyArea = NT,
+#                                   useSAcrs = TRUE,
+#                                   filename2 = NULL,
+#                                   cacheRepo = Paths$cachePath)
+#     sim$studyArea <- bcr6NT
+#   }else if (grepl("bcr7", P(sim)$bcr)){
+#     bcr7NT <- reproducible::Cache(postProcess,
+#                                   bcr7SA,
+#                                   studyArea = NT,
+#                                   useSAcrs = TRUE,
+#                                   filename2 = NULL,
+#                                   cacheRepo = Paths$cachePath)
+#     sim$studyArea <- bcr7NT
+# }
+# } else if (grepl("SK", P(sim)$studyAreaName)){
+#   if(grepl("bcr6", P(sim)$bcr)){
+#   bcr6SK <- reproducible::Cache(postProcess,
+#                                 bcr6SA,
+#                                 studyArea = SK,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr6SK
+#   } else if (grepl("bcr7", P(sim)$bcr)){
+#     bcr7SK <- reproducible::Cache(postProcess,
+#                                   bcr7SA,
+#                                   studyArea = SK,
+#                                   filename2 = NULL,
+#                                   cacheRepo = Paths$cachePath)
+#     sim$studyArea <- bcr7SK
+#   }else if (grepl("bcr8", P(sim)$bcr)){
+#     bcr8SK <- reproducible::Cache(postProcess,
+#                                   bcr8SA,
+#                                   studyArea = SK,
+#                                   filename2 = NULL,
+#                                   cacheRepo = Paths$cachePath)
+#     sim$studyArea <- bcr8SK
+#   }
+# } else if (grepl("MB", P(sim)$studyAreaName)){
+#   if(grepl("bcr6", P(sim)$bcr)){
+#   bcr6MB <- reproducible::Cache(postProcess,
+#                                 MB,
+#                                 studyArea = bcr6SA,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr6MB
+#    } else if(grepl("bcr7", P(sim)$bcr)){
+#      bcr8MB <- reproducible::Cache(postProcess,
+#                                    MB,
+#                                    studyArea = bcr7SA,
+#                                    filename2 = NULL,
+#                                    cacheRepo = Paths$cachePath)
+#      sim$studyArea <- bcr7MB
+#    } else if(grepl("bcr8", P(sim)$bcr)){
+#      bcr8MB <- reproducible::Cache(postProcess,
+#                                    MB,
+#                                    studyArea = bcr8SA,
+#                                    filename2 = NULL,
+#                                    cacheRepo = Paths$cachePath)
+#      sim$studyArea <- bcr8MB
+#   }
+# } else if(grepl("YK", P(sim)$studyArea)){
+#     bcr4YK <- reproducible::Cache(postProcess,
+#                                 YK,
+#                                 studyArea = bcr4SA,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr4YK
+# } else if(grepl("NU", P(sim)$studyArea)){
+#   bcr7NU <- reproducible::Cache(postProcess,
+#                                 NU,
+#                                 studyArea = bcr7SA,
+#                                 filename2 = NULL,
+#                                 cacheRepo = Paths$cachePath)
+#   sim$studyArea <- bcr7NU
+# }
   #sim$studyArea <- as_Spatial(sim$studyArea)
   #sim$studyArea <- spTransform(sim$studyArea, targetCRS)
+  sim$studyArea <- as_Spatial(sim$studyArea)
   sim$studyArea$studyAreaName <- P(sim)$studyAreaName
   sim$studyAreaReporting <- sim$studyArea
 
@@ -466,18 +486,18 @@ if (grepl("AB", P(sim)$studyAreaName)){
     "NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif"
   )
 
-  with_config(config = config(ssl_verifypeer = 0L), {
-    sim$rawbiomassMap2001 <- Cache(prepInputs,
-                               destinationPath = asPath(Paths$inputPath),
-                               url = biomassMapURL,
-                               fun = "raster::raster",
-                               studyArea = sim$studyArea,
-                               rasterToMatch = sim$rasterToMatch,
-                               maskWithRTM = TRUE,
-                               method = "bilinear",
-                               datatype = "INT2U",
-                               filename2 = paste0("rawBiomassMap2001_", P(sim)$studyAreaName, ".tif"))
-  })
+  # with_config(config = config(ssl_verifypeer = 0L), {
+  #   sim$rawbiomassMap2001 <- Cache(prepInputs,
+  #                              destinationPath = asPath(Paths$inputPath),
+  #                              url = biomassMapURL,
+  #                              fun = "raster::raster",
+  #                              studyArea = sim$studyArea,
+  #                              rasterToMatch = sim$rasterToMatch,
+  #                              maskWithRTM = TRUE,
+  #                              method = "bilinear",
+  #                              datatype = "INT2U",
+  #                              filename2 = paste0("rawBiomassMap2001_", P(sim)$studyAreaName, ".tif"))
+  # })
 
   sim$vegMap <- Cache(LandR::prepInputsLCC,
                   year = 2005,
@@ -487,19 +507,19 @@ if (grepl("AB", P(sim)$studyAreaName)){
                   filename2 = paste0("vegMap_",P(sim)$studyAreaName,".tif")
   )
 
-  ecoregionsURL <- paste0("https://drive.google.com/file/d/",
-                          "1y2-mM7NBxEvdeoDENkwbQDa-rdQjiutx/view?usp=sharing")
-  sim$ecoregionsMap <- Cache(prepInputs,
-                         destinationPath = Paths$inputPath,
-                         url = ecoregionsURL,
-                         #fun = "read_sf",
-                         studyArea = sim$studyArea,
-                         rasterToMatch = sim$rasterToMatch,
-                         maskWithRTM = TRUE,
-                         method = "bilinear",
-                         datatype = "INT2U",
-                         filename2 = paste0("ecoregionsMap_",P(sim)$studyAreaName,".tif")
-  )
+  # ecoregionsURL <- paste0("https://drive.google.com/file/d/",
+  #                         "1y2-mM7NBxEvdeoDENkwbQDa-rdQjiutx/view?usp=sharing")
+  # sim$ecoregionsMap <- Cache(prepInputs,
+  #                        destinationPath = Paths$inputPath,
+  #                        url = ecoregionsURL,
+  #                        #fun = "read_sf",
+  #                        studyArea = sim$studyArea,
+  #                        rasterToMatch = sim$rasterToMatch,
+  #                        maskWithRTM = TRUE,
+  #                        method = "bilinear",
+  #                        datatype = "INT2U",
+  #                        filename2 = paste0("ecoregionsMap_",P(sim)$studyAreaName,".tif")
+  # )
 browser()
 ##all species considered in WB (will be subset later for each study area)
   data("sppEquivalencies_CA", package = "LandR", envir = environment())
