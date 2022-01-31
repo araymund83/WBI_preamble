@@ -58,8 +58,7 @@ defineModule(sim, list(
   ),
   outputObjects = bindrows(
     createsOutput("firePoints", objectClass = "SimpleFeatureCollection",
-                  desc = "fire points for XXXXX"),
-#TODO: DESCRIPTION
+                  desc = "fire points for the study area"),
     createsOutput("rasterToMatch", objectClass = "RasterLayer",
                   desc = "template raster"),
     createsOutput("rasterToMatchLarge", objectClass = "RasterLayer",
@@ -227,14 +226,15 @@ Init <- function(sim) {
   #                               destinationPath = asPath(Paths$inputPath),
   #                               filename2 = NULL)
    #bcr6SA <- as_Spatial(bcr6SA)
-  browser()
+#browser()
 if (grepl("AB", P(sim)$studyAreaName)){
   bcrAB <- st_intersection(bcrWB, AB)
   sim$studyArea <- bcrAB
 }
 if (grepl("BC", P(sim)$studyAreaName)){
   bcrBC <- st_intersection(bcrWB, BC)
-  sim$studyArea <- bcrBC
+  bcr6BC <- st_intersection(bcrBC, bcr6)
+  sim$studyArea <- bcr6BC
 }
 if (grepl("MB", P(sim)$studyAreaName)){
   bcrMB <- st_intersection(bcrWB, MB)
@@ -396,31 +396,35 @@ if (grepl("YK", P(sim)$studyAreaName)){
 # }
   #sim$studyArea <- as_Spatial(sim$studyArea)
   #sim$studyArea <- spTransform(sim$studyArea, targetCRS)
-  sim$studyArea <- as_Spatial(sim$studyArea)
+
+  #sim$studyArea <- as_Spatial(sim$studyArea)
+  sim$studyArea <- st_cast(sim$studyArea, 'POLYGON')  ## line added because masking RTM fails later in the script
   sim$studyArea$studyAreaName <- P(sim)$studyAreaName
   sim$studyAreaReporting <- sim$studyArea
 
   #studyArea and studyAreaLarge are the same buffered area
-  sim$studyArea <- buffer(sim$studyArea, P(sim)$bufferDist)
+  sim$studyArea <- st_buffer(sim$studyArea, P(sim)$bufferDist)
   sim$studyAreaLarge <- sim$studyArea
-
+#browser()
   #################################################################################
   ## LCC 2010
   #################################################################################
 ##create a RTM for lcc2010 have a 250 m resolution
-  RTM <- Cache(LandR::prepInputsLCC,
-               destinationPath = asPath(Paths$inputPath),
-               studyArea = sim$studyArea,
-               year = 2005,
-               filename2 = paste0(P(sim)$studyAreaName, "_250_RTM.tif"))
+  RTM <- reproducible::Cache(LandR::prepInputsLCC,
+                             destinationPath = asPath(Paths$inputPath),
+                             studyArea = sim$studyArea,
+                             year = 2005,
+                             useCache = P(sim)$.useCache,
+                             filename2 = paste0(P(sim)$studyAreaName, "_250_RTM.tif"))
 
 
-   sim$rasterToMatch <- Cache(LandR::prepInputsLCC,
-                              destinationPath = asPath(Paths$inputPath),
-                              rasterToMatch = RTM,
-                              year = 2010,
-                              filename2 = paste0(P(sim)$studyAreaName, "_rtm.tif"))
-
+   # sim$rasterToMatch <- Cache(LandR::prepInputsLCC,
+   #                            destinationPath = asPath(Paths$inputPath),
+   #                            rasterToMatch = RTM,
+   #                            year = 2010,
+   #                            filename2 = paste0(P(sim)$studyAreaName, "_rtm.tif"))
+  sim$rasterToMatch <- RTM
+browser()
   sim$rasterToMatchReporting <- Cache(maskInputs, sim$rasterToMatch, sim$studyAreaReporting)
   sim$rasterToMatchLarge <- sim$rasterToMatch
 
@@ -486,18 +490,18 @@ if (grepl("YK", P(sim)$studyAreaName)){
     "NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif"
   )
 
-  # with_config(config = config(ssl_verifypeer = 0L), {
-  #   sim$rawbiomassMap2001 <- Cache(prepInputs,
-  #                              destinationPath = asPath(Paths$inputPath),
-  #                              url = biomassMapURL,
-  #                              fun = "raster::raster",
-  #                              studyArea = sim$studyArea,
-  #                              rasterToMatch = sim$rasterToMatch,
-  #                              maskWithRTM = TRUE,
-  #                              method = "bilinear",
-  #                              datatype = "INT2U",
-  #                              filename2 = paste0("rawBiomassMap2001_", P(sim)$studyAreaName, ".tif"))
-  # })
+  # # with_config(config = config(ssl_verifypeer = 0L), {
+    sim$rawbiomassMap2001 <- Cache(prepInputs,
+                               destinationPath = asPath(Paths$inputPath),
+                               url = biomassMapURL,
+                               fun = "raster::raster",
+                               studyArea = sim$studyArea,
+                               rasterToMatch = sim$rasterToMatch,
+                               maskWithRTM = TRUE,
+                               method = "bilinear",
+                               datatype = "INT2U",
+                               filename2 = paste0("rawBiomassMap2001_", P(sim)$studyAreaName, ".tif"))
+  #})
 
   sim$vegMap <- Cache(LandR::prepInputsLCC,
                   year = 2005,
@@ -520,7 +524,7 @@ if (grepl("YK", P(sim)$studyAreaName)){
   #                        datatype = "INT2U",
   #                        filename2 = paste0("ecoregionsMap_",P(sim)$studyAreaName,".tif")
   # )
-browser()
+
 ##all species considered in WB (will be subset later for each study area)
   data("sppEquivalencies_CA", package = "LandR", envir = environment())
   allWBspp <- c("Abie_Bal", "Abie_Las", "Betu_Pap", "Lari_Lar",
