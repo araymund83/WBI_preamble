@@ -226,15 +226,15 @@ Init <- function(sim) {
   #                               destinationPath = asPath(Paths$inputPath),
   #                               filename2 = NULL)
    #bcr6SA <- as_Spatial(bcr6SA)
-browser()
+#browser()
 if (grepl("AB", P(sim)$studyAreaName)){
   bcrAB <- st_intersection(bcrWB, AB)
   sim$studyArea <- bcrAB
 }
 if (grepl("BC", P(sim)$studyAreaName)){
   bcrBC <- st_intersection(bcrWB, BC)
- # bcr6BC <- st_intersection(bcrBC, bcr6)
-  sim$studyArea <- bcrBC
+  bcr6BC <- st_intersection(bcrBC, bcr6)
+  sim$studyArea <- bcr6BC
 }
 if (grepl("MB", P(sim)$studyAreaName)){
   bcrMB <- st_intersection(bcrWB, MB)
@@ -409,7 +409,7 @@ if (grepl("YK", P(sim)$studyAreaName)){
   #################################################################################
   ## LCC 2010
   #################################################################################
-##create a RTM for lcc2005 have a 250 m resolution
+##create a RTM for lcc2010 have a 250 m resolution
   RTM <- reproducible::Cache(LandR::prepInputsLCC,
                              destinationPath = asPath(Paths$inputPath),
                              studyArea = sim$studyArea,
